@@ -311,6 +311,25 @@
 <span id="311">311</span>
 <span id="312">312</span>
 <span id="313">313</span>
+<span id="314">314</span>
+<span id="315">315</span>
+<span id="316">316</span>
+<span id="317">317</span>
+<span id="318">318</span>
+<span id="319">319</span>
+<span id="320">320</span>
+<span id="321">321</span>
+<span id="322">322</span>
+<span id="323">323</span>
+<span id="324">324</span>
+<span id="325">325</span>
+<span id="326">326</span>
+<span id="327">327</span>
+<span id="328">328</span>
+<span id="329">329</span>
+<span id="330">330</span>
+<span id="331">331</span>
+<span id="332">332</span>
 </pre><pre class="rust"><code><span class="kw">mod </span>color;
 <span class="kw">mod </span>model;
 
@@ -346,7 +365,9 @@
 <span class="attribute">#[derive(Parser, Debug)]
 #[command(version = GIT_VERSION)]
 </span><span class="kw">struct </span>Args {
-	<span class="attribute">#[arg(short, long, default_value_t = <span class="bool-val">true</span>)]
+	<span class="attribute">#[arg(long, default_value_t = <span class="bool-val">false</span>)]
+	</span>show_console: bool,
+	<span class="attribute">#[arg(long, default_value_t = <span class="bool-val">true</span>)]
 	</span>show_log: bool,
 }
 
@@ -365,11 +386,21 @@
 	}};
 }
 
+<span class="attribute">#[cfg(target_os = <span class="string">&quot;windows&quot;</span>)]
+</span><span class="kw">fn </span>hide_console_window() {
+	<span class="kw">use </span>std::ptr;
+	<span class="kw">use </span>winapi::um::wincon::GetConsoleWindow;
+	<span class="kw">use </span>winapi::um::winuser::{ShowWindow, SW_HIDE};
+	<span class="kw">let </span>window = <span class="kw">unsafe </span>{ GetConsoleWindow() };
+	<span class="kw">if </span>window != ptr::null_mut() {
+		<span class="kw">unsafe </span>{
+			ShowWindow(window, SW_HIDE);
+		}
+	}
+}
+
 <span class="kw">fn </span>init_log(show_log: bool) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
 	<span class="kw">let </span>logfile_name = <span class="string">&quot;logfile.log&quot;</span>;
-	<span class="kw">if </span>std::path::Path::new(logfile_name).exists() {
-		std::fs::remove_file(logfile_name)<span class="question-mark">?</span>;
-	}
 
 	<span class="kw">let </span>log_pattern = <span class="string">&quot;{h({l})} - {d(%Y-%m-%d %H:%M:%S)} - {m}{n}&quot;</span>;
 
@@ -377,7 +408,7 @@
 	<span class="kw">let </span>fixed_window_roller = FixedWindowRoller::builder()
 		.build(<span class="string">&quot;log_last_{}.log&quot;</span>, window_size)
 		.unwrap();
-	<span class="kw">let </span>size_limit = <span class="number">25 </span>* <span class="number">1024</span>; <span class="comment">// 25MB
+	<span class="kw">let </span>size_limit = <span class="number">1 </span>* <span class="number">1000 </span>* <span class="number">1024</span>; <span class="comment">// 1MB
 	</span><span class="kw">let </span>size_trigger = SizeTrigger::new(size_limit);
 
 	<span class="kw">let </span>compound_policy =
@@ -421,6 +452,13 @@
 
 	init_log(args.show_log)<span class="question-mark">?</span>;
 	color_eyre::install()<span class="question-mark">?</span>;
+
+	<span class="attribute">#[cfg(target_os = <span class="string">&quot;windows&quot;</span>)]
+	</span>{
+		<span class="kw">if </span>!args.show_console {
+			hide_console_window()
+		}
+	}
 
 	<span class="macro">log::info!</span>(<span class="string">&quot;Overlay version: {GIT_VERSION}&quot;</span>);
 
